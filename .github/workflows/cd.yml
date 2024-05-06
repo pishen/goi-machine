@@ -28,6 +28,6 @@ jobs:
         java-version: 17
         cache: sbt
     - name: 'Use gcloud CLI'
-      run: 'gcloud info'
+      run: 'gcloud app describe'
     - name: Deploy
       run: sbt -v deploy

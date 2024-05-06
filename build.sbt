@@ -47,7 +47,7 @@ deploy := {
   IO.copyFile(baseDirectory.value / "app.yaml", yamlDestPath)
 
   import sys.process._
-  val cmd = Seq("gcloud", "app", "deploy", yamlDestPath.toString, "-v", "main")
+  val cmd = Seq("gcloud", "app", "deploy", yamlDestPath.toString, "--project", "goi-machine", "-v", "main")
   println(cmd.mkString(" "))
   assert(cmd.! == 0)
 }
