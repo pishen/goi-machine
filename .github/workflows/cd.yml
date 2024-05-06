@@ -17,7 +17,6 @@ jobs:
       with:
         project_id: goi-machine
         workload_identity_provider: projects/352431468635/locations/global/workloadIdentityPools/github/providers/my-repo
-        service_account: goi-machine@appspot.gserviceaccount.com
     - name: Setup Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
     - name: Setup JDK
