@@ -49,5 +49,5 @@ deploy := {
   import sys.process._
   val cmd = Seq("gcloud", "app", "deploy", yamlDestPath.toString, "-v", "main")
   println(cmd.mkString(" "))
-  cmd.!
+  assert(cmd.! == 0)
 }

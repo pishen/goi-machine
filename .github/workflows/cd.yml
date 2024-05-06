@@ -27,5 +27,7 @@ jobs:
         distribution: temurin
         java-version: 17
         cache: sbt
+    - name: 'Use gcloud CLI'
+      run: 'gcloud info'
     - name: Deploy
       run: sbt -v deploy
