@@ -19,8 +19,6 @@ jobs:
         workload_identity_provider: projects/352431468635/locations/global/workloadIdentityPools/github/providers/my-repo
     - name: Setup Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
-      with:
-        version: '>= 363.0.0'
     - name: Setup JDK
       uses: actions/setup-java@v3
       with:
