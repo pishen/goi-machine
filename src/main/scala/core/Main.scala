@@ -14,6 +14,7 @@ import sttp.model.HeaderNames
 import sttp.model.StatusCode
 import sttp.model.Uri
 import sttp.model.headers.CookieValueWithMeta
+import sttp.monad.FutureMonad
 import sttp.tapir._
 import sttp.tapir.files._
 import sttp.tapir.server.netty.NettyFutureServer
@@ -123,10 +124,13 @@ object Main extends App with StrictLogging {
       ("/", cookie).asRight[Unit]
     }
 
-  val files = staticResourcesGetServerEndpoint[Future](emptyInput)(
-    classOf[App].getClassLoader(),
-    "public"
-  )
+  val files = staticResourcesGetEndpoint(emptyInput)
+    .out(
+      header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    )
+    .serverLogic {
+      Resources.get(classOf[App].getClassLoader(), "public")(new FutureMonad())
+    }
 
   NettyFutureServer()
     .port(sys.env.getOrElse("PORT", "8080").toInt)
