@@ -56,9 +56,4 @@ prepareForDeploy := {
   IO.copyFile(assembly.value, deployDir / "app.jar")
   val yamlDestPath = deployDir / "app.yaml"
   IO.copyFile(baseDirectory.value / "app.yaml", yamlDestPath)
-
-  import sys.process._
-  val cmd = Seq("gcloud", "app", "deploy", yamlDestPath.toString, "--project", "goi-machine", "-v", "main")
-  println(cmd.mkString(" "))
-  assert(cmd.! == 0)
 }
