@@ -8,6 +8,8 @@ import io.circe.syntax._
 import pdi.jwt.JwtAlgorithm
 import pdi.jwt.JwtCirce
 import scalatags.Text.all.{header => _, _}
+import scalatags.Text.svgAttrs
+import scalatags.Text.svgTags
 import sttp.client3._
 import sttp.client3.circe._
 import sttp.model.HeaderNames
@@ -65,7 +67,52 @@ object Main extends App with StrictLogging {
             .asRight[String]
         case Some(token) =>
           decodeUser(token).map(user =>
-            button(cls := btnStyle, user.email.stripSuffix("@gmail.com"))
+            div(
+              cls := "relative inline-block text-left",
+              attr("x-data") := "{isOpen:false}",
+              button(
+                cls := btnStyle + " inline-flex w-full justify-center gap-x-1.5",
+                attr("x-on:click") := "isOpen = !isOpen",
+                user.email.stripSuffix("@gmail.com"),
+                svgTags.svg(
+                  cls := "-mr-1 h-5 w-5 text-gray-400",
+                  svgAttrs.viewBox := "0 0 20 20",
+                  svgAttrs.fill := "currentColor",
+                  svgTags.path(
+                    svgAttrs.fillRule := "evenodd",
+                    svgAttrs.d := "M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z",
+                    svgAttrs.clipRule := "evenodd"
+                  )
+                )
+              ),
+              div(
+                cls := "absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none",
+                attr("x-show") := "isOpen",
+                attr("x-transition:enter") :=
+                  "transition ease-out duration-100",
+                attr("x-transition:enter-start") :=
+                  "transform opacity-0 scale-95",
+                attr("x-transition:enter-end") :=
+                  "transform opacity-100 scale-100",
+                attr("x-transition:leave") := "transition ease-in duration-75",
+                attr("x-transition:leave-start") :=
+                  "transform opacity-100 scale-100",
+                attr("x-transition:leave-end") :=
+                  "transform opacity-0 scale-95",
+                div(
+                  cls := "py-1",
+                  button(
+                    cls := "text-gray-700 block px-4 py-2 text-sm hover:bg-gray-50 w-full text-left",
+                    "追加"
+                  ),
+                  a(
+                    href := "/logout",
+                    cls := "text-gray-700 block px-4 py-2 text-sm hover:bg-gray-50",
+                    "Logout"
+                  )
+                )
+              )
+            )
           )
       }
     }
