@@ -18,13 +18,19 @@ jobs:
         project_id: goi-machine
         workload_identity_provider: projects/352431468635/locations/global/workloadIdentityPools/github/providers/my-repo
         service_account: goi-machine@appspot.gserviceaccount.com
-    - name: Setup Cloud SDK
-      uses: google-github-actions/setup-gcloud@v2
     - name: Setup JDK
       uses: actions/setup-java@v3
       with:
         distribution: temurin
         java-version: 17
         cache: sbt
+    - name: Build
+      run: sbt -v prepareForDeploy
     - name: Deploy
-      run: sbt -v deploy
+      uses: google-github-actions/deploy-appengine@v2
+      with:
+        working_directory: target/deploy
+        env_vars: |-
+          JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+          OAUTH_SECRET=${{ secrets.OAUTH_SECRET }}
+        version: main
