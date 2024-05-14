@@ -69,10 +69,10 @@ object Main extends App with StrictLogging {
           decodeUser(token).map(user =>
             div(
               cls := "relative inline-block text-left",
-              attr("x-data") := "{isOpen:false}",
+              attr("x-data") := "{ open: false }",
               button(
                 cls := btnStyle + " inline-flex w-full justify-center gap-x-1.5",
-                attr("x-on:click") := "isOpen = !isOpen",
+                attr("x-on:click") := "open = !open",
                 user.email.stripSuffix("@gmail.com"),
                 svgTags.svg(
                   cls := "-mr-1 h-5 w-5 text-gray-400",
@@ -87,7 +87,8 @@ object Main extends App with StrictLogging {
               ),
               div(
                 cls := "absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none",
-                attr("x-show") := "isOpen",
+                attr("x-show") := "open",
+                attr("x-on:click.outside") := "open = false",
                 attr("x-transition:enter") :=
                   "transition ease-out duration-100",
                 attr("x-transition:enter-start") :=
