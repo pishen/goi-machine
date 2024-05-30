@@ -7,9 +7,6 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import pdi.jwt.JwtAlgorithm
 import pdi.jwt.JwtCirce
-import scalatags.Text.all.{header => _, _}
-import scalatags.Text.svgAttrs
-import scalatags.Text.svgTags
 import sttp.client3._
 import sttp.client3.circe._
 import sttp.model.HeaderNames
@@ -19,6 +16,8 @@ import sttp.model.headers.CookieValueWithMeta
 import sttp.monad.FutureMonad
 import sttp.tapir._
 import sttp.tapir.files._
+import sttp.tapir.generic.auto._
+import sttp.tapir.json.circe._
 import sttp.tapir.server.netty.NettyFutureServer
 
 import java.time.Instant
@@ -30,6 +29,11 @@ object Main extends App with StrictLogging {
   val jwtKey = conf.getString("jwt.secretKey")
   val clientId = conf.getString("oauth.id")
   val clientSecret = conf.getString("oauth.secret")
+  val origin = Uri.unsafeParse(
+    if (conf.hasPath("origin")) conf.getString("origin")
+    else "http://localhost:8080"
+  )
+  val callbackUri = origin.withPath("callback")
 
   val sttpBackend = HttpClientFutureBackend()
 
@@ -46,92 +50,30 @@ object Main extends App with StrictLogging {
     .errorOut(stringBody)
     .serverSecurityLogicPure(decodeUser)
 
-  val tagBody =
-    stringBody.map(_ => div(sys.error("can't used as input")))(_.toString)
-
-  val menu = endpoint.get
-    .in("menu")
+  val me = endpoint.get
+    .in("me")
     .in(cookie[Option[String]]("token"))
-    .in(header[String]("HX-Current-URL"))
-    .out(tagBody)
+    .out(jsonBody[Option[User]])
     .errorOut(stringBody)
-    .serverLogicPure[Future] { case (tokenOpt, currentUrl) =>
-      val btnStyle =
-        "rounded-md px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-      tokenOpt match {
-        case None =>
-          val callbackUri = Uri.unsafeParse(currentUrl).withPath("callback")
-          val authUri =
-            uri"https://accounts.google.com/o/oauth2/v2/auth?client_id=$clientId&redirect_uri=$callbackUri&response_type=code&scope=email"
-          a(cls := btnStyle, href := authUri.toString, "Sign in")
-            .asRight[String]
-        case Some(token) =>
-          decodeUser(token).map(user =>
-            div(
-              cls := "relative inline-block text-left",
-              attr("x-data") := "{ open: false }",
-              button(
-                cls := btnStyle + " inline-flex w-full justify-center gap-x-1.5",
-                attr("x-on:click") := "open = !open",
-                user.email.stripSuffix("@gmail.com"),
-                svgTags.svg(
-                  cls := "-mr-1 h-5 w-5 text-gray-400",
-                  svgAttrs.viewBox := "0 0 20 20",
-                  svgAttrs.fill := "currentColor",
-                  svgTags.path(
-                    svgAttrs.fillRule := "evenodd",
-                    svgAttrs.d := "M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z",
-                    svgAttrs.clipRule := "evenodd"
-                  )
-                )
-              ),
-              div(
-                cls := "absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none",
-                attr("x-show") := "open",
-                attr("x-on:click.outside") := "open = false",
-                attr("x-transition:enter") :=
-                  "transition ease-out duration-100",
-                attr("x-transition:enter-start") :=
-                  "transform opacity-0 scale-95",
-                attr("x-transition:enter-end") :=
-                  "transform opacity-100 scale-100",
-                attr("x-transition:leave") := "transition ease-in duration-75",
-                attr("x-transition:leave-start") :=
-                  "transform opacity-100 scale-100",
-                attr("x-transition:leave-end") :=
-                  "transform opacity-0 scale-95",
-                div(
-                  cls := "py-1",
-                  button(
-                    cls := "text-gray-700 block px-4 py-2 text-sm hover:bg-gray-50 w-full text-left",
-                    "追加"
-                  ),
-                  a(
-                    href := "/logout",
-                    cls := "text-gray-700 block px-4 py-2 text-sm hover:bg-gray-50",
-                    "Logout"
-                  )
-                )
-              )
-            )
-          )
-      }
+    .serverLogicPure[Future](_.map(decodeUser).sequence)
+
+  val login = endpoint.get
+    .in("login")
+    .out(statusCode(StatusCode.Found))
+    .out(header[String](HeaderNames.Location))
+    .serverLogicPure[Future] { _ =>
+      uri"https://accounts.google.com/o/oauth2/v2/auth?client_id=$clientId&redirect_uri=$callbackUri&response_type=code&scope=email".toString
+        .asRight[Unit]
     }
 
   case class AccessTokenResp(access_token: String)
   val callback = endpoint.get
     .in("callback")
     .in(query[String]("code"))
-    .in(header[String](HeaderNames.Host))
     .out(statusCode(StatusCode.Found))
     .out(header[String](HeaderNames.Location))
     .out(setCookie("token"))
-    .serverLogic { case (code, host) =>
-      val redirectUri = if (host.startsWith("localhost")) {
-        uri"http://$host/callback"
-      } else {
-        uri"https://$host/callback"
-      }
+    .serverLogic { code =>
       for {
         accessToken <- basicRequest
           .post(uri"https://oauth2.googleapis.com/token")
@@ -139,7 +81,7 @@ object Main extends App with StrictLogging {
             "code" -> code,
             "client_id" -> clientId,
             "client_secret" -> clientSecret,
-            "redirect_uri" -> redirectUri.toString,
+            "redirect_uri" -> callbackUri.toString,
             "grant_type" -> "authorization_code"
           )
           .response(asJson[AccessTokenResp].getRight)
@@ -183,7 +125,7 @@ object Main extends App with StrictLogging {
   NettyFutureServer()
     .port(sys.env.getOrElse("PORT", "8080").toInt)
     .addEndpoints(
-      List(menu, callback, logout, files)
+      List(me, login, callback, logout, files)
     )
     .start()
     .foreach { binding =>

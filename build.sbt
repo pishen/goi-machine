@@ -14,6 +14,7 @@ libraryDependencies ++= Seq(
   "com.softwaremill.sttp.client3" %% "circe" % sttpV,
   "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirV,
   "com.softwaremill.sttp.tapir" %% "tapir-netty-server" % tapirV,
+  "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirV,
   "com.softwaremill.sttp.tapir" %% "tapir-files" % tapirV,
   "com.typesafe" % "config" % "1.4.3",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",

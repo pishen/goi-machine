@@ -33,4 +33,5 @@ jobs:
         env_vars: |-
           JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
           OAUTH_SECRET=${{ secrets.OAUTH_SECRET }}
+          ORIGIN=https://goi.pishen.net
         version: main
