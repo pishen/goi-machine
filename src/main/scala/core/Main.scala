@@ -23,6 +23,7 @@ import sttp.tapir.server.netty.NettyFutureServer
 import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.io.Source
 
 object Main extends App with StrictLogging {
   val conf = ConfigFactory.load()
@@ -122,10 +123,22 @@ object Main extends App with StrictLogging {
       Resources.get(classOf[App].getClassLoader(), "public")(new FutureMonad())
     }
 
+  val default = endpoint.get
+    .out(htmlBodyUtf8)
+    .out(
+      header(
+        HeaderNames.StrictTransportSecurity,
+        "max-age=31536000; includeSubDomains"
+      )
+    )
+    .serverLogicPure[Future](_ =>
+      Source.fromResource("public/index.html").mkString.asRight[Unit]
+    )
+
   NettyFutureServer()
     .port(sys.env.getOrElse("PORT", "8080").toInt)
     .addEndpoints(
-      List(me, login, callback, logout, files)
+      List(me, login, callback, logout, default)
     )
     .start()
     .foreach { binding =>

@@ -13,7 +13,7 @@
     <div x-data="{ me: null }" x-init="me = await (await fetch('/me')).json()"
         class="h-dvh container mx-auto flex flex-col">
         <nav class="flex justify-between px-4 py-3">
-            <a class="text-2xl self-center" href="#">ゴイマシーン</a>
+            <a class="text-2xl self-center" href="/">ゴイマシーン</a>
             <a x-show="!me"
                 class="rounded-md px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                 href="/login">Sign in</a>
@@ -30,16 +30,26 @@
                 <div x-show="open" @click.outside="open = false" x-transition
                     class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <div class="py-1" role="none">
-                        <a href="#" class="text-gray-700 block px-4 py-2 text-sm">追加</a>
-                        <a href="/logout" class="text-gray-700 block px-4 py-2 text-sm">Logout</a>
+                        <a href="/add" class="text-gray-700 hover:bg-gray-100 block px-4 py-2 text-sm">追加</a>
+                        <a href="/logout" class="text-gray-700 hover:bg-gray-100 block px-4 py-2 text-sm">Logout</a>
                     </div>
                 </div>
             </div>
         </nav>
-        <div class="flex-auto flex flex-col justify-center items-center">
-            <form action="" class="text-lg">
-                <input type="text" class="w-60">
-            </form>
+        <div x-show="!me" class="flex-auto flex flex-col justify-center items-center">LOBBY</div>
+        <div x-show="me && window.location.pathname == '/'" class="flex-auto flex flex-col justify-center items-center">
+            PRACTICE</div>
+        <div x-show="me && window.location.pathname == '/add'"
+            class="flex-auto flex flex-col justify-center items-center px-4 gap-y-5">
+            <input type="text"
+                class="w-full max-w-screen-sm border-0 text-3xl border-b-2 border-gray-200 focus:ring-0 focus:border-black"
+                placeholder="問">
+            <input type="text"
+                class="w-full max-w-screen-sm border-0 text-3xl border-b-2 border-gray-200 focus:ring-0 focus:border-black"
+                placeholder="答">
+            <div class="w-full max-w-screen-sm flex flex-row-reverse">
+                <button class="rounded-md px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white">Save</button>
+            </div>
         </div>
     </div>
 </body>
