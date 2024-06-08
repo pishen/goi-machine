@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % circeV,
   "io.circe" %% "circe-generic" % circeV,
   "io.circe" %% "circe-parser" % circeV,
-  "net.pishen" %% "store4s-rpc" % "0.19.0"
+  "net.pishen" %% "store4s-rpc" % "0.20.0"
 )
 
 ThisBuild / tpolecatDefaultOptionsMode := DevMode
@@ -35,7 +35,8 @@ assembly / assemblyJarName := "app.jar"
 
 assembly / assemblyMergeStrategy := {
   case "META-INF/io.netty.versions.properties" => MergeStrategy.first
-  case "module-info.class"                     => MergeStrategy.first
+  case PathList(ps @ _*) if ps.last == "module-info.class" =>
+    MergeStrategy.first
   case x =>
     val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(x)
