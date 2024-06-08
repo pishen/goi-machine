@@ -1,3 +1,5 @@
+import org.typelevel.sbt.tpolecat.DevMode
+
 name := "goi-machine"
 
 scalaVersion := "2.13.13"
@@ -20,21 +22,11 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
   "io.circe" %% "circe-core" % circeV,
   "io.circe" %% "circe-generic" % circeV,
-  "io.circe" %% "circe-parser" % circeV
+  "io.circe" %% "circe-parser" % circeV,
+  "net.pishen" %% "store4s-rpc" % "0.19.0"
 )
 
-scalacOptions ++= Seq(
-  "-deprecation",
-  "-feature",
-  "-language:higherKinds",
-  "-language:reflectiveCalls",
-  "-Ywarn-unused:implicits",
-  "-Ywarn-unused:imports",
-  "-Ywarn-unused:locals",
-  "-Ywarn-unused:params"
-)
-
-Compile / console / scalacOptions --= Seq("-Ywarn-unused:imports")
+ThisBuild / tpolecatDefaultOptionsMode := DevMode
 
 // assembly
 assembly / mainClass := Some("core.Main")
