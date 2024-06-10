@@ -43,7 +43,7 @@
         <form x-show="me && window.location.pathname == '/'" class="flex-auto flex flex-col justify-center items-center"
             x-data="{ quiz: { qa: { question: '', answer: '' }, message: '' } }"
             x-init="quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz.qa) })).json()">
-            <div class="w-full max-w-screen-sm" x-text="quiz.qa.question"></div>
+            <div class="w-full max-w-screen-sm text-3xl" x-text="quiz.qa.question"></div>
             <input type="text"
                 class="w-full max-w-screen-sm border-0 text-3xl border-b-2 border-gray-200 focus:ring-0 focus:border-black"
                 x-model="quiz.qa.answer" required>

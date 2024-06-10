@@ -34,4 +34,5 @@ jobs:
           JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
           OAUTH_SECRET=${{ secrets.OAUTH_SECRET }}
           ORIGIN=https://goi.pishen.net
+          DATASTORE_PROJECT_ID=goi-machine
         version: main
