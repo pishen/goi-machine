@@ -12,6 +12,7 @@
 <body>
     <div x-data="{ me: null }" x-init="me = await (await fetch('/me')).json()"
         class="h-dvh container mx-auto flex flex-col">
+        <!-- menu -->
         <nav class="flex justify-between px-4 py-3">
             <a class="text-2xl self-center" href="/">ゴイマシーン</a>
             <a x-show="!me"
@@ -30,27 +31,38 @@
                 <div x-show="open" @click.outside="open = false" x-transition
                     class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <div class="py-1" role="none">
-                        <a href="/add" class="text-gray-700 hover:bg-gray-100 block px-4 py-2 text-sm">追加</a>
+                        <a href="/questions" class="text-gray-700 hover:bg-gray-100 block px-4 py-2 text-sm">追加</a>
                         <a href="/logout" class="text-gray-700 hover:bg-gray-100 block px-4 py-2 text-sm">Logout</a>
                     </div>
                 </div>
             </div>
         </nav>
+        <!-- home (not logged in) -->
         <div x-show="!me" class="flex-auto flex flex-col justify-center items-center">LOBBY</div>
-        <div x-show="me && window.location.pathname == '/'" class="flex-auto flex flex-col justify-center items-center">
-            PRACTICE</div>
-        <div x-show="me && window.location.pathname == '/add'"
-            class="flex-auto flex flex-col justify-center items-center px-4 gap-y-5">
+        <!-- home (logged in) -->
+        <form x-show="me && window.location.pathname == '/'" class="flex-auto flex flex-col justify-center items-center"
+            x-data="{ quiz: { qa: { question: '', answer: '' }, message: '' } }"
+            x-init="quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz.qa) })).json()">
+            <div class="w-full max-w-screen-sm" x-text="quiz.qa.question"></div>
             <input type="text"
                 class="w-full max-w-screen-sm border-0 text-3xl border-b-2 border-gray-200 focus:ring-0 focus:border-black"
-                placeholder="問">
+                x-model="quiz.qa.answer" required>
+        </form>
+        <!-- questions -->
+        <form x-show="me && window.location.pathname == '/questions'"
+            class="flex-auto flex flex-col justify-center items-center px-4 gap-y-5"
+            x-data="{ qa: { question: null, answer: null } }"
+            @submit.prevent="fetch('/questions', { method: 'PUT', body: JSON.stringify(qa) }); $el.reset()">
             <input type="text"
                 class="w-full max-w-screen-sm border-0 text-3xl border-b-2 border-gray-200 focus:ring-0 focus:border-black"
-                placeholder="答">
+                x-model="qa.question" placeholder="問" required>
+            <input type="text"
+                class="w-full max-w-screen-sm border-0 text-3xl border-b-2 border-gray-200 focus:ring-0 focus:border-black"
+                x-model="qa.answer" placeholder="答" required>
             <div class="w-full max-w-screen-sm flex flex-row-reverse">
                 <button class="rounded-md px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white">Save</button>
             </div>
-        </div>
+        </form>
     </div>
 </body>
 

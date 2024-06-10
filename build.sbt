@@ -11,11 +11,11 @@ val circeV = "0.14.1"
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.5.6",
   "com.github.jwt-scala" %% "jwt-circe" % "10.0.1",
-  "com.lihaoyi" %% "scalatags" % "0.8.2",
   "com.softwaremill.sttp.client3" %% "core" % sttpV,
   "com.softwaremill.sttp.client3" %% "circe" % sttpV,
   "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirV,
-  "com.softwaremill.sttp.tapir" %% "tapir-netty-server" % tapirV,
+  // exclude netty-codec-http2 to prevent conflict with store4s-rpc
+  "com.softwaremill.sttp.tapir" %% "tapir-netty-server" % tapirV exclude ("io.netty", "netty-codec-http2"),
   "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirV,
   "com.softwaremill.sttp.tapir" %% "tapir-files" % tapirV,
   "com.typesafe" % "config" % "1.4.3",

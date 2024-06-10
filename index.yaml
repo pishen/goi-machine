@@ -1,0 +1,6 @@
+indexes:
+- kind: Question
+  properties:
+  - name: userId
+  - name: correctCount
+  - name: lastTry

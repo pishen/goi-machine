@@ -7,6 +7,7 @@ import io.circe.generic.auto._
 import io.circe.syntax._
 import pdi.jwt.JwtAlgorithm
 import pdi.jwt.JwtCirce
+import store4s.rpc.{EncoderOps => Store4sEncoderOps, _}
 import sttp.client3._
 import sttp.client3.circe._
 import sttp.model.HeaderNames
@@ -24,6 +25,7 @@ import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.io.Source
+import scala.util.Random
 
 object Main extends App with StrictLogging {
   val conf = ConfigFactory.load()
@@ -38,6 +40,8 @@ object Main extends App with StrictLogging {
 
   val sttpBackend = HttpClientFutureBackend()
 
+  val ds = Datastore()
+
   case class User(id: String, email: String)
   def decodeUser(token: String) = JwtCirce
     .decodeJson(token, jwtKey, Seq(JwtAlgorithm.HS256))
@@ -49,7 +53,7 @@ object Main extends App with StrictLogging {
   val secureEndpoint = endpoint
     .securityIn(auth.apiKey(cookie[String]("token")))
     .errorOut(stringBody)
-    .serverSecurityLogicPure(decodeUser)
+    .serverSecurityLogicPure[User, Future](decodeUser)
 
   val me = endpoint.get
     .in("me")
@@ -115,6 +119,96 @@ object Main extends App with StrictLogging {
       ("/", cookie).asRight[Unit]
     }
 
+  case class Question(
+      userId: String,
+      question: String,
+      answer: String,
+      correctCount: Int = 0,
+      lastTry: Long = 0
+  )
+  implicit val questionEnc: Encoder[Question] =
+    Encoder.gen[Question].withName(q => q.userId + q.question)
+
+  case class QA(question: String, answer: String)
+  val questionPut = secureEndpoint.put
+    .in("questions")
+    .in(jsonBody[QA])
+    .out(stringBody)
+    .serverLogicSuccess { user => qa =>
+      ds.transaction { tx =>
+        for {
+          q <- tx
+            .lookupByName[Question](user.id + qa.question)
+            .map(_.headOption)
+            .map(
+              _.getOrElse(Question(user.id, qa.question, qa.answer))
+            )
+          _ <-
+            if (qa.answer == "") {
+              tx.deleteByName[Question](user.id + qa.question)
+            } else {
+              tx.upsert(q.copy(answer = qa.answer).asEntity)
+            }
+        } yield "saved"
+      }
+    }
+
+  val questionByQ = secureEndpoint.get
+    .in("questions")
+    .in(query[String]("q"))
+
+  val questionByA = secureEndpoint.get
+    .in("questions")
+    .in(query[String]("a"))
+
+  case class Quiz(qa: QA, message: String)
+  val quiz = secureEndpoint.put
+    .in("quiz")
+    .in(jsonBody[QA])
+    .out(jsonBody[Quiz])
+    .serverLogicSuccess { user => qa =>
+      def getNewQA() = Query
+        .from[Question]
+        .filter(_.userId == user.id)
+        .filter(_.lastTry < System.currentTimeMillis() - 3600000)
+        .sortBy(_.correctCount.asc)
+        .take(10)
+        .run(ds)
+        .map { res =>
+          Random.shuffle(res.toSeq).headOption match {
+            case Some(q) =>
+              Quiz(QA(q.question, ""), "")
+            case None =>
+              Quiz(QA("", ""), "All done, take a rest!")
+          }
+        }
+
+      if (qa.question != "") {
+        for {
+          q <- ds.lookupByName[Question](user.id + qa.question).map(_.head)
+          _ <- ds.update {
+            val now = System.currentTimeMillis()
+            val newQ = if (qa.answer == q.answer) {
+              q.copy(correctCount = q.correctCount + 1, lastTry = now)
+            } else {
+              q.copy(correctCount = 0, lastTry = now)
+            }
+            newQ.asEntity
+          }
+          quiz <-
+            if (qa.answer == q.answer) {
+              getNewQA()
+            } else {
+              Future.successful(
+                Quiz(qa.copy(answer = q.answer), "wrong answer")
+              )
+            }
+        } yield quiz
+      } else {
+        getNewQA()
+      }
+    }
+
   val files = staticResourcesGetEndpoint(emptyInput)
     .out(
       header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
@@ -138,10 +232,12 @@ object Main extends App with StrictLogging {
   NettyFutureServer()
     .port(sys.env.getOrElse("PORT", "8080").toInt)
     .addEndpoints(
-      List(me, login, callback, logout, default)
+      List(me, login, callback, logout, questionPut, quiz, default)
     )
     .start()
-    .foreach { binding =>
+    .map { binding =>
       logger.info(s"Server started at port ${binding.port}")
     }
+    .failed
+    .foreach(t => logger.error("Error starting server", t))
 }
