@@ -1,0 +1,18 @@
+{
+    "name": "ゴイマシーン",
+    "start_url": "/",
+    "display": "standalone",
+    "icons": [
+        {
+            "src": "/files/icons/goi-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "/files/icons/goi-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
