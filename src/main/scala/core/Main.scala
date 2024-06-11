@@ -198,7 +198,7 @@ object Main extends App with StrictLogging {
           }
           quiz <-
             if (qa.answer == q.answer) {
-              getNewQA()
+              getNewQA().map(_.copy(message = "correct!"))
             } else {
               Future.successful(
                 Quiz(qa.copy(answer = q.answer), "wrong answer")
