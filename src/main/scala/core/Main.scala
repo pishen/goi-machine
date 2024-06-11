@@ -43,6 +43,20 @@ object Main extends App with StrictLogging {
   val ds = Datastore()
 
   case class User(id: String, email: String)
+  case class Me(user: Option[User])
+  case class AccessTokenResp(access_token: String)
+  case class Question(
+      userId: String,
+      question: String,
+      answer: String,
+      correctCount: Int = 0,
+      lastTry: Long = 0
+  )
+  implicit val questionEnc: Encoder[Question] =
+    Encoder.gen[Question].withName(q => q.userId + q.question)
+  case class QA(question: String, answer: String)
+  case class Quiz(qa: QA, message: String)
+
   def decodeUser(token: String) = JwtCirce
     .decodeJson(token, jwtKey, Seq(JwtAlgorithm.HS256))
     .toEither
@@ -55,7 +69,6 @@ object Main extends App with StrictLogging {
     .errorOut(stringBody)
     .serverSecurityLogicPure[User, Future](decodeUser)
 
-  case class Me(user: Option[User])
   val me = endpoint.get
     .in("me")
     .in(cookie[Option[String]]("token"))
@@ -72,7 +85,6 @@ object Main extends App with StrictLogging {
         .asRight[Unit]
     }
 
-  case class AccessTokenResp(access_token: String)
   val callback = endpoint.get
     .in("callback")
     .in(query[String]("code"))
@@ -120,17 +132,6 @@ object Main extends App with StrictLogging {
       ("/", cookie).asRight[Unit]
     }
 
-  case class Question(
-      userId: String,
-      question: String,
-      answer: String,
-      correctCount: Int = 0,
-      lastTry: Long = 0
-  )
-  implicit val questionEnc: Encoder[Question] =
-    Encoder.gen[Question].withName(q => q.userId + q.question)
-
-  case class QA(question: String, answer: String)
   val questionPut = secureEndpoint.put
     .in("questions")
     .in(jsonBody[QA])
@@ -154,15 +155,16 @@ object Main extends App with StrictLogging {
       }
     }
 
+  // TODO
   val questionByQ = secureEndpoint.get
     .in("questions")
     .in(query[String]("q"))
 
+  // TODO
   val questionByA = secureEndpoint.get
     .in("questions")
     .in(query[String]("a"))
 
-  case class Quiz(qa: QA, message: String)
   val quiz = secureEndpoint.put
     .in("quiz")
     .in(jsonBody[QA])
