@@ -55,12 +55,13 @@ object Main extends App with StrictLogging {
     .errorOut(stringBody)
     .serverSecurityLogicPure[User, Future](decodeUser)
 
+  case class Me(user: Option[User])
   val me = endpoint.get
     .in("me")
     .in(cookie[Option[String]]("token"))
-    .out(jsonBody[Option[User]])
+    .out(jsonBody[Me])
     .errorOut(stringBody)
-    .serverLogicPure[Future](_.map(decodeUser).sequence)
+    .serverLogicPure[Future](_.map(decodeUser).sequence.map(Me.apply))
 
   val login = endpoint.get
     .in("login")

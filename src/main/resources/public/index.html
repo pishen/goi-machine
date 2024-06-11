@@ -15,13 +15,13 @@
         <!-- menu -->
         <nav class="flex justify-between px-4 py-3">
             <a class="text-2xl self-center" href="/">ゴイマシーン</a>
-            <a x-show="!me"
+            <a x-show="me && !me.user"
                 class="rounded-md px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                 href="/login">Sign in</a>
-            <div x-show="me" x-data="{ open: false }" class="relative inline-block text-left">
+            <div x-show="me.user" x-data="{ open: false }" class="relative inline-block text-left">
                 <button @click="open = !open"
                     class="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                    <span x-text="me.email.split('@')[0]"></span>
+                    <span x-text="me.user.email.split('@')[0]"></span>
                     <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd"
                             d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
@@ -38,18 +38,26 @@
             </div>
         </nav>
         <!-- home (not logged in) -->
-        <div x-show="!me" class="flex-auto flex flex-col justify-center items-center">LOBBY</div>
+        <div x-show="me && !me.user" class="flex-auto flex flex-col justify-center items-center">LOBBY</div>
         <!-- home (logged in) -->
-        <form x-show="me && window.location.pathname == '/'" class="flex-auto flex flex-col justify-center items-center"
+        <form x-show="me.user && window.location.pathname == '/'"
+            class="flex-auto flex flex-col justify-center items-center px-4 gap-y-5"
             x-data="{ quiz: { qa: { question: '', answer: '' }, message: '' } }"
-            x-init="quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz.qa) })).json()">
+            x-init="quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz.qa) })).json()"
+            @submit.prevent="
+              quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz.qa) })).json();
+              $el.reset();
+              setTimeout(() => quiz.message = '', 3000);
+            ">
+            <div class="absolute top-0 p-4 text-sm rounded-lg bg-gray-50" x-show="quiz.message != ''"
+                x-text="quiz.message" x-transition></div>
             <div class="w-full max-w-screen-sm text-3xl" x-text="quiz.qa.question"></div>
             <input type="text"
                 class="w-full max-w-screen-sm border-0 text-3xl border-b-2 border-gray-200 focus:ring-0 focus:border-black"
                 x-model="quiz.qa.answer" required>
         </form>
         <!-- questions -->
-        <form x-show="me && window.location.pathname == '/questions'"
+        <form x-show="me.user && window.location.pathname == '/questions'"
             class="flex-auto flex flex-col justify-center items-center px-4 gap-y-5"
             x-data="{ qa: { question: null, answer: null } }"
             @submit.prevent="fetch('/questions', { method: 'PUT', body: JSON.stringify(qa) }); $el.reset()">
