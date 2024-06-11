@@ -42,19 +42,19 @@
         <!-- home (logged in) -->
         <form x-show="me.user && window.location.pathname == '/'"
             class="flex-auto flex flex-col justify-center items-center px-4 gap-y-5"
-            x-data="{ quiz: { qa: { question: '', answer: '' }, message: '' } }"
-            x-init="quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz.qa) })).json()"
+            x-data="{ quiz: { question: '', answer: '', wrong: false, message: '' }}"
+            x-init="quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz) })).json()"
             @submit.prevent="
-              quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz.qa) })).json();
+              quiz = await (await fetch('/quiz', { method: 'PUT', body: JSON.stringify(quiz) })).json();
               $el.reset();
               setTimeout(() => quiz.message = '', 3000);
             ">
             <div class="absolute top-0 p-4 text-sm rounded-lg bg-gray-50" x-show="quiz.message != ''"
                 x-text="quiz.message" x-transition></div>
-            <div class="w-full max-w-screen-sm text-3xl" x-text="quiz.qa.question"></div>
+            <div class="w-full max-w-screen-sm text-3xl" x-text="quiz.question"></div>
             <input type="text"
                 class="w-full max-w-screen-sm border-0 text-3xl border-b-2 border-gray-200 focus:ring-0 focus:border-black"
-                x-model="quiz.qa.answer" required>
+                :class="quiz.wrong && 'text-red-500'" x-model="quiz.answer" required>
         </form>
         <!-- questions -->
         <form x-show="me.user && window.location.pathname == '/questions'"

@@ -55,7 +55,12 @@ object Main extends App with StrictLogging {
   implicit val questionEnc: Encoder[Question] =
     Encoder.gen[Question].withName(q => q.userId + q.question)
   case class QA(question: String, answer: String)
-  case class Quiz(qa: QA, message: String)
+  case class Quiz(
+      question: String,
+      answer: String,
+      wrong: Boolean,
+      message: String
+  )
 
   def decodeUser(token: String) = JwtCirce
     .decodeJson(token, jwtKey, Seq(JwtAlgorithm.HS256))
@@ -167,10 +172,10 @@ object Main extends App with StrictLogging {
 
   val quiz = secureEndpoint.put
     .in("quiz")
-    .in(jsonBody[QA])
+    .in(jsonBody[Quiz])
     .out(jsonBody[Quiz])
-    .serverLogicSuccess { user => qa =>
-      def getNewQA() = Query
+    .serverLogicSuccess { user => quiz =>
+      def getNewQuiz() = Query
         .from[Question]
         .filter(_.userId == user.id)
         .filter(_.lastTry < System.currentTimeMillis() - 3600000)
@@ -180,35 +185,35 @@ object Main extends App with StrictLogging {
         .map { res =>
           Random.shuffle(res.toSeq).headOption match {
             case Some(q) =>
-              Quiz(QA(q.question, ""), "")
+              Quiz(q.question, "", false, "")
             case None =>
-              Quiz(QA("", ""), "All done, take a rest!")
+              Quiz("", "", false, "All done, take a rest!")
           }
         }
 
-      if (qa.question != "") {
+      if (quiz.question != "") {
         for {
-          q <- ds.lookupByName[Question](user.id + qa.question).map(_.head)
+          q <- ds.lookupByName[Question](user.id + quiz.question).map(_.head)
           _ <- ds.update {
             val now = System.currentTimeMillis()
-            val newQ = if (qa.answer == q.answer) {
+            val newQ = if (quiz.answer == q.answer && !quiz.wrong) {
               q.copy(correctCount = q.correctCount + 1, lastTry = now)
             } else {
               q.copy(correctCount = 0, lastTry = now)
             }
             newQ.asEntity
           }
-          quiz <-
-            if (qa.answer == q.answer) {
-              getNewQA().map(_.copy(message = "correct!"))
+          newQuiz <-
+            if (quiz.answer == q.answer) {
+              getNewQuiz().map(_.copy(message = "correct!"))
             } else {
               Future.successful(
-                Quiz(qa.copy(answer = q.answer), "wrong answer")
+                Quiz(q.question, q.answer, true, "wrong answer")
               )
             }
-        } yield quiz
+        } yield newQuiz
       } else {
-        getNewQA()
+        getNewQuiz()
       }
     }
 
